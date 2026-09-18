@@ -1,0 +1,20 @@
+# Environnement virtuel
+venv/
+.venv/
+
+# Variables secrètes
+.env
+
+# Cache Python
+__pycache__/
+*.py[cod]
+
+# Cache pytest
+*pytest_cache/
+
+# Fichiers temporaires
+uploads/
+
+# Fichiers système
+.DS_Store
+Thumbs.db

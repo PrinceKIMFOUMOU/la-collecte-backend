@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+psycopg2-binary
+python-dotenv
+pydantic[email]
+python-jose
+bcrypt
+python-multipart
+pypdf
+httpx
