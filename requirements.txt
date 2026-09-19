@@ -8,3 +8,4 @@ bcrypt
 python-multipart
 pypdf
 httpx
+supabase==2.31.0
