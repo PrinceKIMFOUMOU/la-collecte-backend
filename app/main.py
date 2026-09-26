@@ -27,11 +27,13 @@ app = FastAPI(
 )
 
 app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+    CORSMiddleware,
+    allow_origins=[
+        "https://la-collecte-frontend.onrender.com"
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 def valider_pdf(fichier_path):
@@ -1985,7 +1987,7 @@ def create_matiere(
             "semestre_id": matiere.semestre_id
         }
 
-    except psycopg2.errors.UniqueViolation:
+    except psycopg2.errors.UniqueViolation: # type: ignore
         connection.rollback()
 
         raise HTTPException(
@@ -2079,7 +2081,7 @@ def update_matiere(
             "semestre_id": matiere.semestre_id
         }
 
-    except psycopg2.errors.UniqueViolation:
+    except psycopg2.errors.UniqueViolation: # type: ignore
         connection.rollback()
         raise HTTPException(
             status_code=409,

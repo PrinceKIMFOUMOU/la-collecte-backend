@@ -1,10 +1,10 @@
 import os
 from datetime import datetime, timedelta, timezone
 
-from dotenv import load_dotenv
-from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
-from jose import jwt, JWTError
+from dotenv import load_dotenv # type: ignore
+from fastapi import Depends, HTTPException, status # type: ignore
+from fastapi.security import OAuth2PasswordBearer # type: ignore
+from jose import jwt, JWTError # type: ignore
 
 load_dotenv()
 
