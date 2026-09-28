@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form # pyright: ignore[reportMissingImports]
 from fastapi.middleware.cors import CORSMiddleware # pyright: ignore[reportMissingImports]
 from fastapi.security import OAuth2PasswordRequestForm # pyright: ignore[reportMissingImports]
-from fastapi.responses import FileResponse # pyright: ignore[reportMissingImports]
+from fastapi.responses import FileResponse, RedirectResponse # pyright: ignore[reportMissingImports]
 from app.supabase_client import supabase
 from fastapi.responses import Response # type: ignore
 from app.database import get_connection
@@ -48,7 +48,7 @@ def valider_pdf(fichier_path):
     except Exception:
         return False
 
-MAX_PDF_SIZE = 500 * 1024 * 1024  # 10 Mo
+MAX_PDF_SIZE = 500 * 1024 * 1024 * # 500 Mo
 
 
 def verifier_taille_pdf(fichier_path):
@@ -68,7 +68,7 @@ def fermer_connexion(cursor, connection):
         cursor.close()
 
     if connection:
-        connection.close        ()
+        connection.close()
     
 # ==========================================================
 # ROUTE PRINCIPALE
@@ -1143,8 +1143,6 @@ async def remplacer_fichier_ressource(
             if cursor.rowcount == 0:
                 connection.rollback()
 
-                # Le nouveau fichier existe déjà dans Supabase.
-                # On le supprime pour éviter un fichier orphelin.
                 delete_new_url = (
                     f"{SUPABASE_URL}"
                     f"/storage/v1/object/ressources/{nom_unique}"
@@ -1369,133 +1367,6 @@ def get_ressources(
     ]
 
 
-@app.put("/admin/ressources/{ressource_id}")
-def update_ressource(
-    ressource_id: int,
-    titre: str = Form(...),
-    description: str = Form(""),
-    type_ressource_id: int = Form(...),
-    annee_academique_id: int = Form(...),
-    niveau_id: int = Form(...),
-    semestre_id: int = Form(...),
-    matiere_id: int = Form(...),
-    token_data: dict = Depends(verify_admin)
-):
-    connection = get_connection()
-    cursor = connection.cursor()
-
-    # Vérifier que la ressource existe
-    cursor.execute(
-        "SELECT id FROM ressources WHERE id = %s;",
-        (ressource_id,)
-    )
-
-    if cursor.fetchone() is None:
-        cursor.close()
-        connection.close()
-        raise HTTPException(
-            status_code=404,
-            detail="Ressource introuvable"
-        )
-
-    # Vérifier les références
-    cursor.execute(
-        "SELECT id FROM types_ressources WHERE id = %s;",
-        (type_ressource_id,)
-    )
-    if cursor.fetchone() is None:
-        cursor.close()
-        connection.close()
-        raise HTTPException(
-            status_code=400,
-            detail="Type de ressource invalide"
-        )
-
-    cursor.execute(
-        "SELECT id FROM annees_academiques WHERE id = %s;",
-        (annee_academique_id,)
-    )
-    if cursor.fetchone() is None:
-        cursor.close()
-        connection.close()
-        raise HTTPException(
-            status_code=400,
-            detail="Année académique invalide"
-        )
-
-    cursor.execute(
-        "SELECT id FROM niveaux WHERE id = %s;",
-        (niveau_id,)
-    )
-    if cursor.fetchone() is None:
-        cursor.close()
-        connection.close()
-        raise HTTPException(
-            status_code=400,
-            detail="Niveau invalide"
-        )
-
-    cursor.execute(
-        "SELECT id FROM semestres WHERE id = %s;",
-        (semestre_id,)
-    )
-    if cursor.fetchone() is None:
-        cursor.close()
-        connection.close()
-        raise HTTPException(
-            status_code=400,
-            detail="Semestre invalide"
-        )
-
-    cursor.execute(
-        "SELECT id FROM matieres WHERE id = %s;",
-        (matiere_id,)
-    )
-    if cursor.fetchone() is None:
-        cursor.close()
-        connection.close()
-        raise HTTPException(
-            status_code=400,
-            detail="Matière invalide"
-        )
-
-    # Mise à jour
-    cursor.execute(
-        """
-        UPDATE ressources
-        SET
-            titre = %s,
-            description = %s,
-            type_ressource_id = %s,
-            annee_academique_id = %s,
-            niveau_id = %s,
-            semestre_id = %s,
-            matiere_id = %s,
-            updated_at = CURRENT_TIMESTAMP
-        WHERE id = %s;
-        """,
-        (
-            titre,
-            description,
-            type_ressource_id,
-            annee_academique_id,
-            niveau_id,
-            semestre_id,
-            matiere_id,
-            ressource_id
-        )
-    )
-
-    connection.commit()
-
-    cursor.close()
-    connection.close()
-
-    return {
-        "message": "Ressource modifiée avec succès",
-        "ressource_id": ressource_id
-    }
-
 # ==========================================================
 # TELECHARGER / OUVRIR LE PDF
 # UTILISATEUR CONNECTÉ
@@ -1503,14 +1374,13 @@ def update_ressource(
 
 @app.get("/ressources/{ressource_id}/fichier")
 def get_ressource_fichier(
-    ressource_id: int,
-    token_data: dict = Depends(verify_token)
+    ressource_id: int
 ):
     connection = get_connection()
     cursor = connection.cursor()
 
     cursor.execute("""
-        SELECT fichier_path
+        SELECT fichier_path, fichier_nom
         FROM ressources
         WHERE id = %s
     """, (ressource_id,))
@@ -1527,6 +1397,7 @@ def get_ressource_fichier(
         )
 
     fichier_path = ressource[0]
+    fichier_nom = ressource[1]
 
     try:
         contenu = supabase.storage.from_("ressources").download(
@@ -1535,7 +1406,11 @@ def get_ressource_fichier(
 
         return Response(
             content=contenu,
-            media_type="application/pdf"
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f'inline; filename="{fichier_nom}"',
+                "Cache-Control": "public, max-age=86400"
+            }
         )
 
     except Exception as e:
@@ -1862,7 +1737,8 @@ def update_user(
         "user_id": user_id
     }
 
-    # ==========================================================
+
+# ==========================================================
 # SUPPRIMER UN UTILISATEUR
 # ADMIN UNIQUEMENT
 # ==========================================================
@@ -2102,6 +1978,8 @@ def update_matiere(
     finally:
         cursor.close()
         connection.close()
+
+
 # ==========================================================
 # SUPPRIMER UNE MATIERE
 # ADMIN UNIQUEMENT
