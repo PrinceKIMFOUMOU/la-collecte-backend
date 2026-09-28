@@ -1375,6 +1375,10 @@ def get_ressources(
 # TELECHARGER / OUVRIR LE PDF INSTANTANÉMENT
 # ==========================================================
 
+# ==========================================================
+# OUVRIR LE PDF DANS LE LECTEUR DU NAVIGATEUR (SANS FORCER LE TÉLÉCHARGEMENT)
+# ==========================================================
+
 @app.get("/ressources/{ressource_id}/fichier")
 def get_ressource_fichier(
     ressource_id: int
@@ -1383,7 +1387,7 @@ def get_ressource_fichier(
     cursor = connection.cursor()
 
     cursor.execute("""
-        SELECT fichier_path, fichier_nom
+        SELECT fichier_path
         FROM ressources
         WHERE id = %s
     """, (ressource_id,))
@@ -1400,7 +1404,6 @@ def get_ressource_fichier(
         )
 
     fichier_path = ressource[0]
-    fichier_nom = ressource[1]
 
     try:
         contenu = supabase.storage.from_("ressources").download(
@@ -1411,7 +1414,8 @@ def get_ressource_fichier(
             content=contenu,
             media_type="application/pdf",
             headers={
-                "Content-Disposition": f'inline; filename="{fichier_nom}"',
+                "Content-Disposition": "inline",
+                "Content-Type": "application/pdf",
                 "Cache-Control": "public, max-age=86400"
             }
         )
@@ -1421,6 +1425,7 @@ def get_ressource_fichier(
             status_code=404,
             detail=f"Fichier PDF introuvable : {str(e)}"
         )
+    
 # ==========================================================
 # SUPPRIMER UNE RESSOURCE
 # ADMIN UNIQUEMENT
