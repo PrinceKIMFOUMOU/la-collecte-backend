@@ -48,7 +48,7 @@ def valider_pdf(fichier_path):
     except Exception:
         return False
 
-MAX_PDF_SIZE = 500 * 1024 * 1024 * # 500 Mo
+MAX_PDF_SIZE = 500 * 1024 * 1024 
 
 
 def verifier_taille_pdf(fichier_path):
@@ -1368,8 +1368,11 @@ def get_ressources(
 
 
 # ==========================================================
-# TELECHARGER / OUVRIR LE PDF
-# UTILISATEUR CONNECTÉ
+# OUVERTURE / TELECHARGEMENT INSTANTANÉ DU PDF
+# ==========================================================
+
+# ==========================================================
+# TELECHARGER / OUVRIR LE PDF INSTANTANÉMENT
 # ==========================================================
 
 @app.get("/ressources/{ressource_id}/fichier")
@@ -1418,8 +1421,6 @@ def get_ressource_fichier(
             status_code=404,
             detail=f"Fichier PDF introuvable : {str(e)}"
         )
-
-
 # ==========================================================
 # SUPPRIMER UNE RESSOURCE
 # ADMIN UNIQUEMENT
